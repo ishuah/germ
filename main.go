@@ -1,0 +1,50 @@
+package main
+
+import (
+	"fmt"
+	"os"
+	"os/exec"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/layout"
+	"github.com/kr/pty"
+	"golang.org/x/term"
+)
+
+func eval(err error) {
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func main() {
+	a := app.New()
+	w := a.NewWindow("germ")
+
+	c := exec.Command("/bin/bash")
+	p, err := pty.Start(c)
+	eval(err)
+
+	defer c.Process.Kill()
+
+	oldState, err := term.MakeRaw(int(p.Fd()))
+	eval(err)
+
+	defer func() { _ = term.Restore(int(p.Fd()), oldState) }()
+
+	terminal := NewTerminal(p)
+
+	w.SetContent(
+		fyne.NewContainerWithLayout(
+			layout.NewGridWrapLayout(fyne.NewSize(630, 250)),
+			terminal.ui,
+		),
+	)
+
+	w.Canvas().SetOnTypedKey(terminal.OnTypedKey)
+	w.Canvas().SetOnTypedRune(terminal.OnTypedRune)
+
+	w.ShowAndRun()
+}
