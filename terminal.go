@@ -13,38 +13,67 @@ import (
 )
 
 type Terminal struct {
-	ui       *widget.TextGrid
-	pty      *os.File
-	row, col int
-	stream   chan rune
+	ui          *widget.TextGrid
+	pty         *os.File
+	row, col    int
+	stream      chan rune
+	buffer      [32][]rune
+	bufferIndex int
+	redraw      chan bool
 }
 
 func NewTerminal(p *os.File) *Terminal {
 	ui := widget.NewTextGrid()
 	stream := make(chan rune, 0xffff)
-	terminal := &Terminal{pty: p, ui: ui, stream: stream}
-	go terminal.Write()
+	redraw := make(chan bool)
+	terminal := &Terminal{pty: p, ui: ui, stream: stream, buffer: [32][]rune{}, redraw: redraw}
+	go terminal.Draw()
+	go terminal.ProcessInput()
 	go terminal.Read()
 	go terminal.Blink()
 	return terminal
 }
 
-func (t *Terminal) Write() {
+func (t *Terminal) Draw() {
+	for {
+		b := <-t.redraw
+		if b {
+			t.row, t.col = 0, 0
+			for _, line := range t.buffer {
+				if len(line) > 0 {
+					t.row++
+					t.col = 0
+					for _, l := range line {
+						if l == '\n' {
+							t.row++
+							t.col = 0
+							continue
+						}
+						t.ui.SetCell(t.row, t.col, widget.TextGridCell{Rune: l})
+						if t.col >= 60 {
+							t.row++
+							t.col = 0
+						} else {
+							t.col++
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func (t *Terminal) ProcessInput() {
 	var b rune
 	for {
 		b = <-t.stream
-		if b == '\n' {
-			t.row++
-			t.col = 0
+		if b == ' ' && len(t.buffer[t.bufferIndex]) > 0 && t.buffer[t.bufferIndex][len(t.buffer[t.bufferIndex])-1] == '$' {
+			t.buffer[t.bufferIndex] = append(t.buffer[t.bufferIndex], b)
+			t.bufferIndex++
+			t.redraw <- true
 		} else {
-			t.ui.SetCell(t.row, t.col, widget.TextGridCell{Rune: b})
-		}
-
-		if t.col >= 60 {
-			t.row++
-			t.col = 0
-		} else {
-			t.col++
+			//t.ui.SetCell(t.row, t.col, widget.TextGridCell{Rune: b})
+			t.buffer[t.bufferIndex] = append(t.buffer[t.bufferIndex], b)
 		}
 	}
 }
@@ -66,7 +95,7 @@ func (t *Terminal) Read() {
 func (t *Terminal) Blink() {
 	blink := true
 	for {
-		time.Sleep(1 * time.Second)
+		time.Sleep(500 * time.Millisecond)
 		if blink {
 			t.ui.SetCell(t.row, t.col, widget.TextGridCell{Style: &widget.CustomTextGridStyle{BGColor: color.White}})
 		} else {

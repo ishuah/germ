@@ -34,11 +34,12 @@ func main() {
 
 	defer func() { _ = term.Restore(int(p.Fd()), oldState) }()
 
+	os.Setenv("TERM", "xterm-256color")
 	terminal := NewTerminal(p)
 
 	w.SetContent(
 		fyne.NewContainerWithLayout(
-			layout.NewGridWrapLayout(fyne.NewSize(630, 250)),
+			layout.NewGridWrapLayout(fyne.NewSize(630, 630)),
 			terminal.ui,
 		),
 	)
