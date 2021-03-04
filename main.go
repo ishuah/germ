@@ -9,7 +9,6 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/layout"
 	"github.com/kr/pty"
-	"golang.org/x/term"
 )
 
 func eval(err error) {
@@ -28,11 +27,6 @@ func main() {
 	eval(err)
 
 	defer c.Process.Kill()
-
-	oldState, err := term.MakeRaw(int(p.Fd()))
-	eval(err)
-
-	defer func() { _ = term.Restore(int(p.Fd()), oldState) }()
 
 	os.Setenv("TERM", "xterm-256color")
 	terminal := NewTerminal(p)
