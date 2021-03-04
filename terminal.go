@@ -86,7 +86,7 @@ func (t *Terminal) Read() {
 			if err == io.EOF {
 				return
 			}
-			os.Exit(1)
+			os.Exit(0)
 		}
 		t.stream <- r
 	}
