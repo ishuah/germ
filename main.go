@@ -8,7 +8,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/layout"
-	"github.com/kr/pty"
+	"github.com/creack/pty"
 )
 
 func eval(err error) {
