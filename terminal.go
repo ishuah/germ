@@ -18,6 +18,7 @@ type Terminal struct {
 	row, col, cursor int
 	stream           chan rune
 	buffer           [32][]rune
+	commandBuffer    []rune
 	bufferIndex      int
 	redraw           chan bool
 }
@@ -108,6 +109,8 @@ func (t *Terminal) Blink() {
 func (t *Terminal) OnTypedKey(e *fyne.KeyEvent) {
 	switch e.Name {
 	case fyne.KeyEnter, fyne.KeyReturn:
+		_, _ = t.pty.WriteString(string(t.commandBuffer))
+		t.commandBuffer = nil
 		_, _ = t.pty.Write([]byte{'\n'})
 	case fyne.KeyEscape:
 		_, _ = t.pty.Write([]byte{27})
@@ -116,7 +119,8 @@ func (t *Terminal) OnTypedKey(e *fyne.KeyEvent) {
 			t.ui.SetCell(t.row, t.col+t.cursor, widget.TextGridCell{Rune: ' '})
 			t.cursor--
 			t.ui.SetCell(t.row, t.col+t.cursor, widget.TextGridCell{Rune: ' '})
-			_, _ = t.pty.Write([]byte{8})
+			t.commandBuffer = t.commandBuffer[:len(t.commandBuffer)-1]
+			//_, _ = t.pty.Write([]byte{8})
 		}
 	case fyne.KeyUp:
 		_, _ = t.pty.Write([]byte{27, '[', 'A'})
@@ -128,5 +132,6 @@ func (t *Terminal) OnTypedKey(e *fyne.KeyEvent) {
 func (t *Terminal) OnTypedRune(r rune) {
 	t.ui.SetCell(t.row, t.col+t.cursor, widget.TextGridCell{Rune: r})
 	t.cursor++
-	_, _ = t.pty.WriteString(string(r))
+	t.commandBuffer = append(t.commandBuffer, r)
+	//_, _ = t.pty.WriteString(string(r))
 }
