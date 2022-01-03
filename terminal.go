@@ -13,13 +13,13 @@ import (
 )
 
 type Terminal struct {
-	ui          *widget.TextGrid
-	pty         *os.File
-	row, col    int
-	stream      chan rune
-	buffer      [32][]rune
-	bufferIndex int
-	redraw      chan bool
+	ui               *widget.TextGrid
+	pty              *os.File
+	row, col, cursor int
+	stream           chan rune
+	buffer           [32][]rune
+	bufferIndex      int
+	redraw           chan bool
 }
 
 func NewTerminal(p *os.File) *Terminal {
@@ -38,7 +38,7 @@ func (t *Terminal) Draw() {
 	for {
 		b := <-t.redraw
 		if b {
-			t.row, t.col = 0, 0
+			t.row, t.col, t.cursor = 0, 0, 0
 			for _, line := range t.buffer {
 				if len(line) > 0 {
 					t.row++
@@ -97,9 +97,9 @@ func (t *Terminal) Blink() {
 	for {
 		time.Sleep(500 * time.Millisecond)
 		if blink {
-			t.ui.SetCell(t.row, t.col, widget.TextGridCell{Style: &widget.CustomTextGridStyle{BGColor: color.White}})
+			t.ui.SetCell(t.row, t.col+t.cursor, widget.TextGridCell{Style: &widget.CustomTextGridStyle{BGColor: color.White}})
 		} else {
-			t.ui.SetCell(t.row, t.col, widget.TextGridCell{Style: &widget.CustomTextGridStyle{BGColor: theme.BackgroundColor()}})
+			t.ui.SetCell(t.row, t.col+t.cursor, widget.TextGridCell{Style: &widget.CustomTextGridStyle{BGColor: theme.BackgroundColor()}})
 		}
 		blink = !blink
 	}
@@ -112,10 +112,12 @@ func (t *Terminal) OnTypedKey(e *fyne.KeyEvent) {
 	case fyne.KeyEscape:
 		_, _ = t.pty.Write([]byte{27})
 	case fyne.KeyBackspace:
-		t.ui.SetCell(t.row, t.col, widget.TextGridCell{Rune: ' '})
-		t.col--
-		t.ui.SetCell(t.row, t.col, widget.TextGridCell{Rune: ' '})
-		_, _ = t.pty.Write([]byte{8})
+		if t.cursor > 0 {
+			t.ui.SetCell(t.row, t.col+t.cursor, widget.TextGridCell{Rune: ' '})
+			t.cursor--
+			t.ui.SetCell(t.row, t.col+t.cursor, widget.TextGridCell{Rune: ' '})
+			_, _ = t.pty.Write([]byte{8})
+		}
 	case fyne.KeyUp:
 		_, _ = t.pty.Write([]byte{27, '[', 'A'})
 	case fyne.KeyDown:
@@ -124,7 +126,7 @@ func (t *Terminal) OnTypedKey(e *fyne.KeyEvent) {
 }
 
 func (t *Terminal) OnTypedRune(r rune) {
-	t.ui.SetCell(t.row, t.col, widget.TextGridCell{Rune: r})
-	t.col++
+	t.ui.SetCell(t.row, t.col+t.cursor, widget.TextGridCell{Rune: r})
+	t.cursor++
 	_, _ = t.pty.WriteString(string(r))
 }
