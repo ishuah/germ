@@ -6,7 +6,7 @@ A WIP terminal emulator written in Go. This project started out as a [codelab](h
 ```bash
 go mod init && go mod tidy && go run main.go
 ```
-
+### Build
 ```bash
 go build
 ```
