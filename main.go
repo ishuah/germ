@@ -7,6 +7,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"github.com/creack/pty"
 )
@@ -32,7 +33,7 @@ func main() {
 	terminal := NewTerminal(p)
 
 	w.SetContent(
-		fyne.NewContainerWithLayout(
+		container.New(
 			layout.NewGridWrapLayout(fyne.NewSize(630, 630)),
 			terminal.ui,
 		),
