@@ -16,19 +16,14 @@ type Terminal struct {
 	ui               *widget.TextGrid
 	pty              *os.File
 	row, col, cursor int
-	stream           chan rune
 	buffer           [32][]rune
 	commandBuffer    []rune
 	bufferIndex      int
-	redraw           chan bool
 }
 
 func NewTerminal(p *os.File) *Terminal {
 	ui := widget.NewTextGrid()
-	stream := make(chan rune, 0xffff)
-	redraw := make(chan bool)
-	terminal := &Terminal{pty: p, ui: ui, stream: stream, buffer: [32][]rune{}, redraw: redraw}
-	go terminal.ProcessOutput()
+	terminal := &Terminal{pty: p, ui: ui, buffer: [32][]rune{}}
 	go terminal.Read()
 	go terminal.Blink()
 	return terminal
@@ -50,16 +45,13 @@ func (t *Terminal) Draw(r rune) {
 	}
 }
 
-func (t *Terminal) ProcessOutput() {
-	var b rune
-	for {
-		b = <-t.stream
+func (t *Terminal) ProcessOutput(buffer []byte) {
+	for _, b := range string(buffer) {
 		if b == ' ' && len(t.buffer[t.bufferIndex]) > 0 && t.buffer[t.bufferIndex][len(t.buffer[t.bufferIndex])-1] == '$' {
 			t.buffer[t.bufferIndex] = append(t.buffer[t.bufferIndex], b)
 			t.bufferIndex++
 			t.cursor = 0
 		} else {
-			//t.ui.SetCell(t.row, t.col, widget.TextGridCell{Rune: b})
 			t.buffer[t.bufferIndex] = append(t.buffer[t.bufferIndex], b)
 		}
 		t.Draw(b)
@@ -68,15 +60,17 @@ func (t *Terminal) ProcessOutput() {
 
 func (t *Terminal) Read() {
 	reader := bufio.NewReader(t.pty)
+	bufferSize := 4069
+	buffer := make([]byte, bufferSize)
 	for {
-		r, _, err := reader.ReadRune()
+		size, err := reader.Read(buffer)
 		if err != nil {
 			if err == io.EOF {
 				return
 			}
 			os.Exit(0)
 		}
-		t.stream <- r
+		t.ProcessOutput(buffer[:size])
 	}
 }
 
