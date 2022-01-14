@@ -28,54 +28,41 @@ func NewTerminal(p *os.File) *Terminal {
 	stream := make(chan rune, 0xffff)
 	redraw := make(chan bool)
 	terminal := &Terminal{pty: p, ui: ui, stream: stream, buffer: [32][]rune{}, redraw: redraw}
-	go terminal.Draw()
-	go terminal.ProcessInput()
+	go terminal.ProcessOutput()
 	go terminal.Read()
 	go terminal.Blink()
 	return terminal
 }
 
-func (t *Terminal) Draw() {
-	for {
-		b := <-t.redraw
-		if b {
-			t.row, t.col, t.cursor = 0, 0, 0
-			for _, line := range t.buffer {
-				if len(line) > 0 {
-					t.row++
-					t.col = 0
-					for _, l := range line {
-						if l == '\n' {
-							t.row++
-							t.col = 0
-							continue
-						}
-						t.ui.SetCell(t.row, t.col, widget.TextGridCell{Rune: l})
-						if t.col >= 60 {
-							t.row++
-							t.col = 0
-						} else {
-							t.col++
-						}
-					}
-				}
-			}
-		}
+func (t *Terminal) Draw(r rune) {
+	if r == '\n' {
+		t.row++
+		t.col = 0
+		return
+	}
+
+	t.ui.SetCell(t.row, t.col, widget.TextGridCell{Rune: r})
+	if t.col >= 60 {
+		t.row++
+		t.col = 0
+	} else {
+		t.col++
 	}
 }
 
-func (t *Terminal) ProcessInput() {
+func (t *Terminal) ProcessOutput() {
 	var b rune
 	for {
 		b = <-t.stream
 		if b == ' ' && len(t.buffer[t.bufferIndex]) > 0 && t.buffer[t.bufferIndex][len(t.buffer[t.bufferIndex])-1] == '$' {
 			t.buffer[t.bufferIndex] = append(t.buffer[t.bufferIndex], b)
 			t.bufferIndex++
-			t.redraw <- true
+			t.cursor = 0
 		} else {
 			//t.ui.SetCell(t.row, t.col, widget.TextGridCell{Rune: b})
 			t.buffer[t.bufferIndex] = append(t.buffer[t.bufferIndex], b)
 		}
+		t.Draw(b)
 	}
 }
 
