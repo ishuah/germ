@@ -35,7 +35,7 @@ func main() {
 	w.SetContent(
 		container.New(
 			layout.NewGridWrapLayout(fyne.NewSize(630, 630)),
-			terminal.ui,
+			terminal.scroll,
 		),
 	)
 

@@ -8,12 +8,14 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
 type Terminal struct {
 	ui               *widget.TextGrid
+	scroll           *container.Scroll
 	pty              *os.File
 	row, col, cursor int
 	buffer           [32][]rune
@@ -23,7 +25,8 @@ type Terminal struct {
 
 func NewTerminal(p *os.File) *Terminal {
 	ui := widget.NewTextGrid()
-	terminal := &Terminal{pty: p, ui: ui, buffer: [32][]rune{}}
+	scroll := container.NewScroll(ui)
+	terminal := &Terminal{pty: p, ui: ui, scroll: scroll, buffer: [32][]rune{}}
 	go terminal.Read()
 	go terminal.Blink()
 	return terminal
@@ -56,6 +59,7 @@ func (t *Terminal) ProcessOutput(buffer []byte) {
 		}
 		t.Draw(b)
 	}
+	t.scroll.ScrollToBottom()
 }
 
 func (t *Terminal) Read() {
