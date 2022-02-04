@@ -18,15 +18,13 @@ type Terminal struct {
 	scroll           *container.Scroll
 	pty              *os.File
 	row, col, cursor int
-	buffer           [32][]rune
 	commandBuffer    []rune
-	bufferIndex      int
 }
 
 func NewTerminal(p *os.File) *Terminal {
 	ui := widget.NewTextGrid()
 	scroll := container.NewScroll(ui)
-	terminal := &Terminal{pty: p, ui: ui, scroll: scroll, buffer: [32][]rune{}}
+	terminal := &Terminal{pty: p, ui: ui, scroll: scroll}
 	go terminal.Read()
 	go terminal.Blink()
 	return terminal
@@ -36,6 +34,7 @@ func (t *Terminal) Draw(r rune) {
 	if r == '\n' {
 		t.row++
 		t.col = 0
+		t.cursor = 0
 		return
 	}
 
@@ -50,13 +49,6 @@ func (t *Terminal) Draw(r rune) {
 
 func (t *Terminal) ProcessOutput(buffer []byte) {
 	for _, b := range string(buffer) {
-		if b == ' ' && len(t.buffer[t.bufferIndex]) > 0 && t.buffer[t.bufferIndex][len(t.buffer[t.bufferIndex])-1] == '$' {
-			t.buffer[t.bufferIndex] = append(t.buffer[t.bufferIndex], b)
-			t.bufferIndex++
-			t.cursor = 0
-		} else {
-			t.buffer[t.bufferIndex] = append(t.buffer[t.bufferIndex], b)
-		}
 		t.Draw(b)
 	}
 	t.scroll.ScrollToBottom()
