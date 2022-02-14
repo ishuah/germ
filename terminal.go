@@ -97,7 +97,6 @@ func (t *Terminal) OnTypedKey(e *fyne.KeyEvent) {
 			t.cursor--
 			t.ui.SetCell(t.row, t.col+t.cursor, widget.TextGridCell{Rune: ' '})
 			t.commandBuffer = t.commandBuffer[:len(t.commandBuffer)-1]
-			//_, _ = t.pty.Write([]byte{8})
 		}
 	case fyne.KeyUp:
 		_, _ = t.pty.Write([]byte{27, '[', 'A'})
@@ -110,5 +109,4 @@ func (t *Terminal) OnTypedRune(r rune) {
 	t.ui.SetCell(t.row, t.col+t.cursor, widget.TextGridCell{Rune: r})
 	t.cursor++
 	t.commandBuffer = append(t.commandBuffer, r)
-	//_, _ = t.pty.WriteString(string(r))
 }
