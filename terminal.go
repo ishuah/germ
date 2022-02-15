@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -17,7 +16,6 @@ type Terminal struct {
 	widget.BaseWidget
 	fyne.ShortcutHandler
 	ui               *widget.TextGrid
-	scroll           *container.Scroll
 	pty              *os.File
 	row, col, cursor int
 	commandBuffer    []rune
@@ -25,11 +23,9 @@ type Terminal struct {
 
 func NewTerminal(p *os.File) *Terminal {
 	ui := widget.NewTextGrid()
-	scroll := container.NewScroll(ui)
 	terminal := &Terminal{}
 	terminal.ExtendBaseWidget(terminal)
 	terminal.ui = ui
-	terminal.scroll = scroll
 	terminal.pty = p
 
 	go terminal.Read()
@@ -58,7 +54,6 @@ func (t *Terminal) ProcessOutput(buffer []byte) {
 	for _, b := range string(buffer) {
 		t.Draw(b)
 	}
-	t.scroll.ScrollToBottom()
 }
 
 func (t *Terminal) Read() {
