@@ -116,6 +116,12 @@ func (t *Terminal) TypedRune(r rune) {
 func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
 	if _, ok := s.(*fyne.ShortcutCopy); ok {
 		_, _ = t.pty.Write([]byte{0x3})
+	} else if _, ok := s.(*fyne.ShortcutCut); ok {
+		_, _ = t.pty.Write([]byte{0x18})
+	} else if _, ok := s.(*fyne.ShortcutPaste); ok {
+		_, _ = t.pty.Write([]byte{0x16})
+	} else if _, ok := s.(*fyne.ShortcutSelectAll); ok {
+		_, _ = t.pty.Write([]byte{0x1})
 	}
 }
 
