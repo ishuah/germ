@@ -39,8 +39,6 @@ func main() {
 		),
 	)
 	w.Canvas().Focus(terminal)
-	// w.Canvas().SetOnTypedKey(terminal.OnTypedKey)
-	// w.Canvas().SetOnTypedRune(terminal.OnTypedRune)
 
 	w.ShowAndRun()
 }
