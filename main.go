@@ -35,12 +35,12 @@ func main() {
 	w.SetContent(
 		container.New(
 			layout.NewGridWrapLayout(fyne.NewSize(630, 630)),
-			terminal.scroll,
+			terminal,
 		),
 	)
-
-	w.Canvas().SetOnTypedKey(terminal.OnTypedKey)
-	w.Canvas().SetOnTypedRune(terminal.OnTypedRune)
+	w.Canvas().Focus(terminal)
+	// w.Canvas().SetOnTypedKey(terminal.OnTypedKey)
+	// w.Canvas().SetOnTypedRune(terminal.OnTypedRune)
 
 	w.ShowAndRun()
 }

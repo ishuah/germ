@@ -14,6 +14,8 @@ import (
 )
 
 type Terminal struct {
+	widget.BaseWidget
+	fyne.ShortcutHandler
 	ui               *widget.TextGrid
 	scroll           *container.Scroll
 	pty              *os.File
@@ -24,7 +26,12 @@ type Terminal struct {
 func NewTerminal(p *os.File) *Terminal {
 	ui := widget.NewTextGrid()
 	scroll := container.NewScroll(ui)
-	terminal := &Terminal{pty: p, ui: ui, scroll: scroll}
+	terminal := &Terminal{}
+	terminal.ExtendBaseWidget(terminal)
+	terminal.ui = ui
+	terminal.scroll = scroll
+	terminal.pty = p
+
 	go terminal.Read()
 	go terminal.Blink()
 	return terminal
@@ -83,7 +90,7 @@ func (t *Terminal) Blink() {
 	}
 }
 
-func (t *Terminal) OnTypedKey(e *fyne.KeyEvent) {
+func (t *Terminal) TypedKey(e *fyne.KeyEvent) {
 	switch e.Name {
 	case fyne.KeyEnter, fyne.KeyReturn:
 		_, _ = t.pty.WriteString(string(t.commandBuffer))
@@ -105,8 +112,22 @@ func (t *Terminal) OnTypedKey(e *fyne.KeyEvent) {
 	}
 }
 
-func (t *Terminal) OnTypedRune(r rune) {
+func (t *Terminal) TypedRune(r rune) {
 	t.ui.SetCell(t.row, t.col+t.cursor, widget.TextGridCell{Rune: r})
 	t.cursor++
 	t.commandBuffer = append(t.commandBuffer, r)
+}
+
+func (t *Terminal) TypedShortcut(s fyne.Shortcut) {
+	if _, ok := s.(*fyne.ShortcutCopy); ok {
+		_, _ = t.pty.Write([]byte{0x3})
+	}
+}
+
+func (t *Terminal) FocusGained() {
+	t.Refresh()
+}
+
+func (t *Terminal) FocusLost() {
+	t.Refresh()
 }
